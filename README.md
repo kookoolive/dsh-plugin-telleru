@@ -35,7 +35,7 @@ dsh plugin add github:kookoolive/dsh-plugin-telleru
 | **TellerU 令牌** | [telleru.cn](https://telleru.cn/settings)「设置 → 连接 AI 助手」生成，`tu_` 开头 | 用 TellerU 账号积分，每节 3 积分，同一节只收一次 |
 | **豆包语音 API Key** | [火山引擎控制台 · 豆包语音](https://console.volcengine.com/speech/app) 创建 | 由火山引擎直接结算 |
 
-两样都填时优先用豆包语音 Key。都不填也能用，只是没有声音（只显示板书和字幕），每次运行 `/telleru` 会弹窗提醒。
+两样都填时优先用豆包语音 Key。都不填也能用，只是没有声音（只显示板书和字幕）：在白板里点「开始上课」时会弹窗请你绑定，先不绑定的话，小优头顶会出现「绑定语音」气泡，点它随时补上。
 
 ## 使用
 

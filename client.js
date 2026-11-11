@@ -92,7 +92,6 @@ window.__ModuleLoader__.load({
     // ───── whiteboard_ask：澄清目标 / 摸底 / 确认大纲 ─────
     const PURPOSE = { goal: '学习目标', level: '摸底', outline: '确认大纲', sections: '讲几节', other: '白板讲解' }
     function AskView(props) {
-      React.useEffect(function () { if (isFresh(props) || props.phase !== 'result') promptIfUnbound('run') }, [])
       const m = metaOf(props)
       const args = (m && m.args) || (props.block && props.block.args) || {}
       const label = PURPOSE[args.purpose] || '白板讲解'
@@ -108,7 +107,6 @@ window.__ModuleLoader__.load({
       return function StartView(props) {
         const m = metaOf(props)
         const opened = React.useRef(false)
-        React.useEffect(function () { if (isFresh(props)) promptIfUnbound('run') }, [])
         React.useEffect(function () {
           if (m && m.firstSid && !opened.current && isFresh(props)) { opened.current = true; openBoard(ctx, m.firstSid) }
         }, [m && m.firstSid])
@@ -153,16 +151,20 @@ window.__ModuleLoader__.load({
     const inputStyle = { width: '100%', boxSizing: 'border-box', border: '1px solid ' + C.line, borderRadius: 8, padding: '7px 10px', fontSize: 13, background: C.field, color: C.ink }
     // ───── 绑定弹窗（2026-11-10 用户需求）：装好后首次打开、以及每次运行 /telleru 时没绑定就弹 ─────
     // 两样二选一：TellerU 令牌（账号积分）或豆包语音 API Key（自己付费）；都没有时白板只有板书和字幕
-    const bindStore = { open: null, subs: new Set() }
+    // 何时弹（2026-11-11 用户需求）：对话里生成课程之前不弹；白板里点「开始上课」时由白板检测，
+    // 没绑定就经 window.__telleruBind 请这里弹出；放弃绑定后白板里小优头顶的气泡还能再打开它
+    const bindStore = { open: null, subs: new Set(), waiters: [] }
     function openBind(reason) { bindStore.open = reason; bindStore.subs.forEach(function (f) { f() }) }
-    function closeBind() { bindStore.open = null; bindStore.subs.forEach(function (f) { f() }) }
+    function closeBind(bound) {
+      bindStore.open = null; bindStore.subs.forEach(function (f) { f() })
+      const w = bindStore.waiters.splice(0); w.forEach(function (f) { f(!!bound) })
+    }
     function isBound(d) { const v = (d && d.values) || {}; return !!((v.telleruToken && v.telleruToken.set) || (v.speechApiKey && v.speechApiKey.set)) }
-    let lastRunPrompt = 0
-    /** 运行时检查：没绑定就强提示（同一轮讲解里的几张卡片只弹一次） */
-    function promptIfUnbound(reason) {
-      if (reason === 'run' && Date.now() - lastRunPrompt < 10 * 60 * 1000) return
-      if (reason === 'run') lastRunPrompt = Date.now()
-      fetch(SET_ROUTE).then(function (r) { return r.json() }).then(function (d) { if (!isBound(d)) openBind(reason) }).catch(function () {})
+    /** 白板（同源 iframe）调用：弹出绑定窗，关窗后返回是否已绑定 */
+    if (typeof window !== 'undefined') {
+      window.__telleruBind = function (reason) {
+        return new Promise(function (resolve) { bindStore.waiters.push(resolve); openBind(reason || 'start') })
+      }
     }
 
     function BindOverlay() {
@@ -174,7 +176,7 @@ window.__ModuleLoader__.load({
       const [state, setState] = React.useState({ busy: false, msg: '', bad: false })
       React.useEffect(function () { if (reason) { setToken(''); setKey(''); setState({ busy: false, msg: '', bad: false }) } }, [reason])
       if (!reason) return null
-      const run = reason === 'run'
+      const run = reason !== 'install'
       const canSave = !!(token.trim() || key.trim()) && !state.busy
       const save = function () {
         const patch = {}
@@ -189,7 +191,7 @@ window.__ModuleLoader__.load({
           })
           .then(function (d) {
             if (patch.telleruToken && !patch.speechApiKey && d && d.accountError) { setState({ busy: false, msg: '令牌已保存，但检测没通过：' + d.accountError, bad: true }); return }
-            setState({ busy: false, msg: '', bad: false }); closeBind()
+            setState({ busy: false, msg: '', bad: false }); closeBind(true)
           })
           .catch(function (e) { setState({ busy: false, msg: e.message || '保存失败', bad: true }) })
       }
@@ -216,11 +218,11 @@ window.__ModuleLoader__.load({
           : h('button', { type: 'button', onClick: onClick, disabled: !!disabled, style: { border: variant === 'primary' ? 0 : '1px solid ' + C.line, borderRadius: 10, background: variant === 'primary' ? C.board : C.card, color: variant === 'primary' ? C.onBoard : C.ink, padding: '8px 16px', fontSize: 13.5, cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1 } }, label)
       }
       const footer = h(React.Fragment, null,
-        btn('outline', run ? '先不绑定，只看字幕' : '稍后再说', closeBind),
+        btn('outline', run ? '先不绑定，只看字幕' : '稍后再说', function () { closeBind(false) }),
         btn('primary', state.busy ? '保存中…' : '保存', save, !canSave))
       const title = run ? '绑定后才有语音讲解' : 'TellerU 白板已安装：绑定语音'
       const desc = run ? '二选一填一个：TellerU 令牌，或豆包语音 API Key。' : '二选一填一个，就有语音讲解。'
-      if (P && P.Modal) return h(P.Modal, { open: true, onClose: closeBind, closeLabel: '关闭', title: title, description: desc, footer: footer }, body)
+      if (P && P.Modal) return h(P.Modal, { open: true, onClose: function () { closeBind(false) }, closeLabel: '关闭', title: title, description: desc, footer: footer }, body)
       // 拿不到宿主组件时的简易弹窗
       return h('div', { role: 'dialog', 'aria-modal': true, style: { position: 'fixed', inset: 0, zIndex: 1000, display: 'grid', placeItems: 'center', background: 'rgba(0,0,0,.35)', pointerEvents: 'auto' } },
         h('div', { style: { width: 'min(480px, calc(100vw - 32px))', background: C.card, borderRadius: 16, padding: 20, boxShadow: '0 20px 60px rgba(0,0,0,.25)' } },
@@ -299,19 +301,6 @@ window.__ModuleLoader__.load({
         ctx.slots.inject('plugins.bundle.config', function () { return ctx.slots.register({ name: 'plugins.bundle.config', key: 'dsh-plugin-telleru' }, SettingsView) })
         ctx.slots.inject('tool.call.toolview', function () { return ctx.slots.register({ name: 'tool.call.toolview', key: 'whiteboard_format' }, function () { return Row('📄', '查看讲稿格式', '') }) })
         ctx.slots.inject('shell.overlay', function () { return ctx.slots.register({ name: 'shell.overlay', id: 'telleru-whiteboard.bind' }, BindOverlay) })
-        // 装好后第一次打开：没绑定就弹一次（之后只在运行 /telleru 时提示）
-        ctx.effect(function () {
-          let done = false
-          try { done = localStorage.getItem('telleru-wb:bind-prompted') === '1' } catch (e) { /* */ }
-          if (done) return function () {}
-          const t = setTimeout(function () {
-            fetch(SET_ROUTE).then(function (r) { return r.json() }).then(function (d) {
-              try { localStorage.setItem('telleru-wb:bind-prompted', '1') } catch (e) { /* */ }
-              if (!isBound(d)) openBind('install')
-            }).catch(function () {})
-          }, 1500)
-          return function () { clearTimeout(t) }
-        }, 'telleru-whiteboard: first-run bind')
       },
     }
   },

@@ -34,7 +34,7 @@ The whiteboard is the same one used on [telleru.cn](https://telleru.cn). Lessons
 
 ## Notes
 
-- Without either key the whiteboard works with board content and subtitles only, no voice; `/telleru` reminds you each run.
+- Without either key the whiteboard works with board content and subtitles only, no voice; pressing Start in the whiteboard asks you to bind one; skip it and the study buddy shows a "bind voice" bubble you can click any time.
 - Lessons use your current model's tokens and are AI-generated; double-check important conclusions.
 - Lesson records stay on this machine; only speech requests go to TellerU when a token is set.
 - Requires DeepSeek Harness 0.2.1 or later.
