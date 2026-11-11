@@ -1,0 +1,4 @@
+# 宿主端：index.js（斜杠命令 /whiteboard、工具、白板接口）；package.json 的 dsh.client 让 Web 端加载 client.js（右栏白板、对话卡片）
+- insert:
+    - id: telleru-whiteboard
+      name: dsh-plugin-telleru

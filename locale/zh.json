@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "TellerU",
+    "description": "在任何对话里输入 /whiteboard，TellerU 的 AI 老师在右侧白板边写边讲。",
+    "detail": "docs/detail.zh.md"
+  }
+}

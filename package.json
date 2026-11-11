@@ -1,0 +1,63 @@
+{
+  "name": "dsh-plugin-telleru",
+  "version": "1.0.0",
+  "description": "TellerU：在任何对话里输入 /whiteboard，AI 老师在右侧白板边写边讲。",
+  "author": "TellerU (https://telleru.cn)",
+  "homepage": "https://github.com/kookoolive/dsh-plugin-telleru#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kookoolive/dsh-plugin-telleru.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kookoolive/dsh-plugin-telleru/issues"
+  },
+  "license": "SEE LICENSE IN LICENSE",
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json",
+    "./icon": "./icon.png",
+    "./locale/*.json": "./locale/*.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "app",
+    "cordis.patch.yml",
+    "README.md",
+    "icon.png",
+    "locale",
+    "docs",
+    "LICENSE"
+  ],
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "telleru",
+    "whiteboard",
+    "learning"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/dsh-llm": "*",
+    "@deepseek-ai/schemastery": "*"
+  },
+  "engines": {
+    "node": ">=22.19.0",
+    "dsh": ">=0.2.1-rc.3"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-locale"
+      ]
+    }
+  },
+  "icon": "./icon.png"
+}
