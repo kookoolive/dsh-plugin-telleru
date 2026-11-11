@@ -5,7 +5,7 @@
 //     里面跑的是 TellerU 网站同一份白板页面（嵌入模式）。
 //  2. 对话里三个工具的卡片：whiteboard_ask（澄清 / 摸底 / 确认节数的结果行）、whiteboard_start（白板卡片，自动在右栏打开）、
 //     whiteboard_write_section（这一节写好了 / 正在修改）。
-// 不在输入框周围加任何按钮：入口只有斜杠命令 /whiteboard（宿主端注册）。
+// 不在输入框周围加任何按钮：入口只有斜杠命令 /telleru（宿主端注册）。
 
 window.__ModuleLoader__.load({
   id: 'dsh-plugin-telleru',
@@ -64,7 +64,7 @@ window.__ModuleLoader__.load({
       }, [sid, nav && nav.revision])
       return h('iframe', {
         ref: frame, src: src, title: 'TellerU 白板',
-        allow: 'autoplay; microphone; clipboard-write; fullscreen',
+        allow: 'autoplay; clipboard-write; fullscreen',
         style: { border: 0, width: '100%', height: '100%', display: 'block', background: v('bg-base', '#fff') },
       })
     }
@@ -89,8 +89,8 @@ window.__ModuleLoader__.load({
         extra || null)
     }
 
-    // ───── whiteboard_ask：澄清目标 / 摸底 / 讲几节 ─────
-    const PURPOSE = { goal: '学习目标', level: '摸底', sections: '讲几节', other: '白板讲解' }
+    // ───── whiteboard_ask：澄清目标 / 摸底 / 确认大纲 ─────
+    const PURPOSE = { goal: '学习目标', level: '摸底', outline: '确认大纲', sections: '讲几节', other: '白板讲解' }
     function AskView(props) {
       React.useEffect(function () { if (isFresh(props) || props.phase !== 'result') promptIfUnbound('run') }, [])
       const m = metaOf(props)
@@ -151,7 +151,7 @@ window.__ModuleLoader__.load({
         hint ? h('div', { style: { fontSize: 12, color: C.muted, marginTop: 4, lineHeight: 1.5 } }, hint) : null)
     }
     const inputStyle = { width: '100%', boxSizing: 'border-box', border: '1px solid ' + C.line, borderRadius: 8, padding: '7px 10px', fontSize: 13, background: C.field, color: C.ink }
-    // ───── 绑定弹窗（2026-11-10 用户需求）：装好后首次打开、以及每次运行 /whiteboard 时没绑定就弹 ─────
+    // ───── 绑定弹窗（2026-11-10 用户需求）：装好后首次打开、以及每次运行 /telleru 时没绑定就弹 ─────
     // 两样二选一：TellerU 令牌（账号积分）或豆包语音 API Key（自己付费）；都没有时白板只有板书和字幕
     const bindStore = { open: null, subs: new Set() }
     function openBind(reason) { bindStore.open = reason; bindStore.subs.forEach(function (f) { f() }) }
@@ -232,7 +232,7 @@ window.__ModuleLoader__.load({
 
 
     function SettingsView(props) {
-      if (props.view === 'summary') return '在任何对话里输入 /whiteboard，把指定内容用 TellerU 白板边写边讲（右侧边栏）。'
+      if (props.view === 'summary') return '在任何对话里输入 /telleru，把指定内容用 TellerU 白板边写边讲（右侧边栏）。'
       const [data, setData] = React.useState(null)
       const [draft, setDraft] = React.useState({})
       const [state, setState] = React.useState('')
@@ -299,7 +299,7 @@ window.__ModuleLoader__.load({
         ctx.slots.inject('plugins.bundle.config', function () { return ctx.slots.register({ name: 'plugins.bundle.config', key: 'dsh-plugin-telleru' }, SettingsView) })
         ctx.slots.inject('tool.call.toolview', function () { return ctx.slots.register({ name: 'tool.call.toolview', key: 'whiteboard_format' }, function () { return Row('📄', '查看讲稿格式', '') }) })
         ctx.slots.inject('shell.overlay', function () { return ctx.slots.register({ name: 'shell.overlay', id: 'telleru-whiteboard.bind' }, BindOverlay) })
-        // 装好后第一次打开：没绑定就弹一次（之后只在运行 /whiteboard 时提示）
+        // 装好后第一次打开：没绑定就弹一次（之后只在运行 /telleru 时提示）
         ctx.effect(function () {
           let done = false
           try { done = localStorage.getItem('telleru-wb:bind-prompted') === '1' } catch (e) { /* */ }

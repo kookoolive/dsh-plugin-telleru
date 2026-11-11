@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "TellerU",
-    "description": "Type /whiteboard in any conversation and TellerU's AI tutor teaches it on a whiteboard in the right sidebar.",
+    "description": "Type /telleru in any conversation and TellerU's AI tutor teaches it on a whiteboard in the right sidebar.",
     "detail": "docs/detail.en.md"
   }
 }
