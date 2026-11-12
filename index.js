@@ -16428,6 +16428,13 @@ function sectionView(board, sec) {
     next: next ? { id: sidOf(board.id, next.index), title: next.title, contentStatus: next.lesson ? "ready" : "lazy" } : null,
     // 插件：章节切换列表
     sections: board.sections.map((s) => ({ id: sidOf(board.id, s.index), title: s.title, ready: !!s.lesson, completed: !!s.progress?.completed, current: s.index === sec.index })),
+    // 同一段对话里生成的所有课（2026-11-11 用户需求：多次开讲时左上角下拉能看到、切换所有课）
+    courses: boardsOfSession(board.sessionId).map((b) => ({
+      id: b.id,
+      title: b.title,
+      current: b.id === board.id,
+      sections: b.sections.map((s) => ({ id: sidOf(b.id, s.index), title: s.title, ready: !!s.lesson, completed: !!s.progress?.completed, current: b.id === board.id && s.index === sec.index }))
+    })),
     embed: { boardId: board.id, learner: board.learner }
   };
 }
