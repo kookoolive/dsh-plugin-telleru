@@ -4,6 +4,12 @@
 
 ![TellerU 白板讲解：在对话里输入 /telleru，AI 老师在右侧白板边写边讲](docs/hero.webp)
 
+### 演示视频
+
+https://github.com/user-attachments/assets/a811fe3d-514b-4f7d-a99b-965adaf60e2b
+
+> 约 2 分钟：在对话里输入 /telleru → 追问目标、小题摸底、确认大纲 → 右侧白板边写边讲。
+
 对话里一段话没看懂、一个概念想学透？输入 `/telleru`，[TellerU](https://telleru.cn) 的 AI 老师就在右侧边栏打开白板，像老师站在黑板前一样边写边讲：先问清你的学习目标、摸一摸你的基础，再一节一节讲给你听，中途随时打断提问——讲给你听，直到你会。
 
 ## 安装
@@ -82,6 +88,8 @@ dsh plugin add dsh-plugin-telleru
 
 <a id="english"></a>
 ## English
+
+**Demo video:** https://github.com/user-attachments/assets/a811fe3d-514b-4f7d-a99b-965adaf60e2b
 
 Type `/telleru` in any DeepSeek Harness conversation and [TellerU](https://telleru.cn)'s AI tutor opens a whiteboard in the right sidebar and teaches it like a teacher at the blackboard: it checks your goal and level first, explains section by section, and takes questions any time.
 
