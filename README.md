@@ -10,19 +10,24 @@
 
 要求 DeepSeek Harness **0.2.1 及以上**（插件页的图文介绍需要 0.2.2 及以上）。
 
-**方式一：插件页安装**　打开「插件 → 添加插件」，填入：
+**方式一：插件页安装**　打开「插件 → 添加插件」，填入包名：
 
 ```
-github:kookoolive/dsh-plugin-telleru
+dsh-plugin-telleru
 ```
 
 **方式二：命令行**
 
 ```bash
-dsh plugin add github:kookoolive/dsh-plugin-telleru
+dsh plugin add dsh-plugin-telleru
 ```
 
-想固定某个版本，在后面加标签，例如 `github:kookoolive/dsh-plugin-telleru#v1.0.0`；也可以从 [Releases](https://github.com/kookoolive/dsh-plugin-telleru/releases) 下载 `.tgz`，用 `dsh plugin add /绝对路径/dsh-plugin-telleru-1.0.0.tgz` 安装。
+从 [npm](https://www.npmjs.com/package/dsh-plugin-telleru) 安装的是预构建包，不需要额外的构建授权，推荐用这种方式。想固定版本，写成 `dsh-plugin-telleru@1.3.2`。
+
+**其他安装方式**
+
+- 从 GitHub 安装：`dsh plugin add github:kookoolive/dsh-plugin-telleru`（固定版本加标签，例如 `#v1.3.2`）
+- 离线安装：从 [Releases](https://github.com/kookoolive/dsh-plugin-telleru/releases) 下载 `.tgz`，用 `dsh plugin add /绝对路径/dsh-plugin-telleru-1.3.2.tgz` 安装
 
 装好后重启 DeepSeek Harness，打开插件开关。
 
@@ -83,10 +88,10 @@ Type `/telleru` in any DeepSeek Harness conversation and [TellerU](https://telle
 **Install** (DeepSeek Harness 0.2.1+; the illustrated plugin page needs 0.2.2+):
 
 ```bash
-dsh plugin add github:kookoolive/dsh-plugin-telleru
+dsh plugin add dsh-plugin-telleru
 ```
 
-or enter `github:kookoolive/dsh-plugin-telleru` under Plugins → Add plugin, then restart.
+or enter `dsh-plugin-telleru` under Plugins → Add plugin, then restart. The [npm package](https://www.npmjs.com/package/dsh-plugin-telleru) is prebuilt; you can also install from GitHub with `github:kookoolive/dsh-plugin-telleru`, or offline from a [release](https://github.com/kookoolive/dsh-plugin-telleru/releases) `.tgz`.
 
 **Voice** (pick one, in the plugin's settings): a **TellerU token** from [telleru.cn](https://telleru.cn/settings) → Settings → Connect AI assistants (3 credits per section), or your own **Doubao Speech API key** (billed by Volcano Engine; preferred when both are set). Without either, the board works with text and subtitles only.
 
