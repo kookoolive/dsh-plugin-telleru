@@ -354,7 +354,7 @@ var IMAGE_ROLES = ["concrete", "metaphor", "scene", "contrast", "story", "panora
 init_db();
 init_lang();
 
-// stub:/home/claude/st/src/lib/docparse.ts
+// stub:/home/claude/stm/src/lib/docparse.ts
 var __stub = (n) => new Proxy(function() {
 }, { apply() {
   return void 0;
@@ -372,7 +372,7 @@ var parsePptxZip = __stub("parsePptxZip");
 var parseOffice = __stub("parseOffice");
 var pageText = __stub("pageText");
 
-// stub:/home/claude/st/src/lib/zip.ts
+// stub:/home/claude/stm/src/lib/zip.ts
 var __stub2 = (n) => new Proxy(function() {
 }, { apply() {
   return void 0;
@@ -384,7 +384,7 @@ var readZip = __stub2("readZip");
 var zipText = __stub2("zipText");
 var writeZip = __stub2("writeZip");
 
-// stub:/home/claude/st/src/lib/ocr.ts
+// stub:/home/claude/stm/src/lib/ocr.ts
 var __stub3 = (n) => new Proxy(function() {
 }, { apply() {
   return void 0;
@@ -405,7 +405,7 @@ var loadCanvas = __stub3("loadCanvas");
 var prepareImage = __stub3("prepareImage");
 var pdfPageImages = __stub3("pdfPageImages");
 
-// stub:/home/claude/st/src/lib/repo/index.ts
+// stub:/home/claude/stm/src/lib/repo/index.ts
 var __stub4 = (n) => new Proxy(function() {
 }, { apply() {
   return void 0;
@@ -620,7 +620,7 @@ function gradeFirstTries(g2, firsts) {
 // ../../src/lib/board-validate.ts
 init_textwidth();
 
-// ../../node_modules/katex/dist/katex.mjs
+// ../../../st/node_modules/katex/dist/katex.mjs
 var SourceLocation = class _SourceLocation {
   // The + prefix indicates that these fields aren't writeable
   // Lexer holding the input string.
@@ -15903,6 +15903,35 @@ function lessonQuotaIssues(steps) {
   if (tables < LESSON_TABLE_MIN) issues.push(`\u5168\u8282\u8868\u683C ${tables} \u5F20\uFF08< ${LESSON_TABLE_MIN}\uFF09`);
   return issues;
 }
+var BRIDGE_RE = /你可能会(想|问)|快测|小测|测一下|测试一下|考考你|确认一下/;
+var REVEAL_RE = /^(所以)?(正确答案|答案是|答案就是|没错|对，)/;
+function relocateUngroundedQuizzes(steps, threshold = QUIZ_GROUNDING_MIN) {
+  let moved = 0;
+  for (let q = 0; q < steps.length; q++) {
+    const quiz = steps[q];
+    if (quiz.type !== "quiz" || !quizShapeOk(quiz)) continue;
+    if (quizGroundingScore(steps, q) >= threshold) continue;
+    const before = steps[q - 1];
+    const after = steps[q + 1];
+    const hasBridge = !!before && before.type === "say" && BRIDGE_RE.test(before.text);
+    const hasReveal = !!after && after.type === "say" && !after.board && REVEAL_RE.test(after.text.trim());
+    const start = hasBridge ? q - 1 : q;
+    const block = steps.slice(start, q + 1 + (hasReveal ? 1 : 0));
+    const rest = [...steps.slice(0, start), ...steps.slice(start + block.length)];
+    const qi = block.indexOf(quiz);
+    for (let p = start - 1; p >= 1; p--) {
+      if (rest[p - 1].type !== "say") continue;
+      const trial = [...rest.slice(0, p), ...block.slice(0, qi + 1)];
+      if (quizGroundingScore(trial, p + qi) >= threshold) {
+        steps.splice(0, steps.length, ...rest.slice(0, p), ...block, ...rest.slice(p));
+        moved++;
+        q = p + block.length - 1;
+        break;
+      }
+    }
+  }
+  return moved;
+}
 function phrasesOf(text2) {
   return Array.from(new Set(text2.split(/[\s,，。.、；;：:|/→←↔+＋=（）()「」“”"'《》①②③④⑤·…!！?？-]+/).map((x) => x.trim()).filter((x) => x.length >= 2 && x.length <= 8)));
 }
@@ -16706,7 +16735,7 @@ init_textwidth();
 // ../../src/lib/courses.ts
 init_db();
 
-// stub:/home/claude/st/src/lib/project-summary.ts
+// stub:/home/claude/stm/src/lib/project-summary.ts
 var __stub5 = (n) => new Proxy(function() {
 }, { apply() {
   return void 0;
@@ -17001,7 +17030,7 @@ init_db();
 import fs from "node:fs";
 import path2 from "node:path";
 
-// stub:/home/claude/st/src/lib/cover.ts
+// stub:/home/claude/stm/src/lib/cover.ts
 var __stub6 = (n) => new Proxy(function() {
 }, { apply() {
   return void 0;
@@ -17346,7 +17375,7 @@ async function enrichLesson(l, c, imageDeps) {
   return { recapGame: game ?? null };
 }
 
-// stub:/home/claude/st/src/lib/websources.ts
+// stub:/home/claude/stm/src/lib/websources.ts
 var __stub7 = (n) => new Proxy(function() {
 }, { apply() {
   return void 0;
@@ -17365,7 +17394,7 @@ var englishQueryOf = __stub7("englishQueryOf");
 var webBasisFor = __stub7("webBasisFor");
 var shortTitle = __stub7("shortTitle");
 
-// stub:/home/claude/st/src/lib/mastery.ts
+// stub:/home/claude/stm/src/lib/mastery.ts
 var __stub8 = (n) => new Proxy(function() {
 }, { apply() {
   return void 0;
@@ -17388,7 +17417,7 @@ var GRAPHS = [
   { start: "A", nodes: "ABCDEFG".split("").map((x) => ({ id: x, label: x })), edges: [["A", "B"], ["A", "D"], ["B", "C"], ["B", "E"], ["D", "E"], ["E", "F"], ["F", "G"], ["C", "G"]] }
 ];
 
-// stub:/home/claude/st/src/lib/credits.ts
+// stub:/home/claude/stm/src/lib/credits.ts
 var __stub9 = (n) => new Proxy(function() {
 }, { apply() {
   return void 0;
@@ -17738,6 +17767,18 @@ function compilePackage(userId, raw, opts = {}) {
       });
     });
     if (errors.length > before) return null;
+    parts.forEach((part, pi) => {
+      const quizzes = part.steps.filter((s) => s.type === "quiz");
+      const at = new Map(quizzes.map((q) => [q, part.steps.indexOf(q)]));
+      if (!relocateUngroundedQuizzes(part.steps)) return;
+      const where = pi === 0 ? "\u5F00\u573A" : pi === 4 ? "\u6536\u5C3E" : `\u77E5\u8BC6\u70B9 ${pi}`;
+      for (const q of quizzes) {
+        const to = part.steps.indexOf(q);
+        if (to === at.get(q)) continue;
+        const prompt = String(q.prompt ?? "").slice(0, 30);
+        W(`${p}`, `\u5FEB\u6D4B\u300C${prompt}\u300D\u5728\u539F\u4F4D\u7F6E\u524D 3 \u6BB5\u91CC\u627E\u4E0D\u5230\u7B54\u6848\u4F9D\u636E\uFF0C\u5DF2\u8FDE\u540C\u8FC7\u6E21\u53E5\u524D\u79FB\u5230${where}\u7B2C ${to + 1} \u6B65\uFF08\u7D27\u8DDF\u8BB2\u51FA\u7B54\u6848\u7684\u53E3\u64AD\u4E4B\u540E\uFF09\uFF1B\u60F3\u4FDD\u6301\u539F\u987A\u5E8F\uFF0C\u5C31\u5728\u9898\u76EE\u524D 1\u20133 \u6BB5\u91CC\u8BB2\u51FA\u7B54\u6848\u8981\u70B9`);
+      }
+    });
     if (opts.assets && opts.requireImages !== false) {
       const imgs = parts.flatMap((pt) => pt.steps).filter((x) => x.type === "say" && x.board?.kind === "image").length;
       if (!imgs) E(`${p}`, `\u6807\u51C6\u914D\u7F6E\uFF1A\u6BCF\u8282\u81F3\u5C11 1 \u5F20\u751F\u56FE\u677F\u4E66\uFF08\u63A8\u8350\u6848\u4F8B\u6F2B\u753B kind "image" + panels\uFF0C\u6700\u591A ${IMAGE_LIMITS.perLesson} \u5F20\uFF09\uFF0C\u5199\u6784\u60F3\u5373\u53EF\uFF0C\u5BFC\u5165\u540E TellerU \u751F\u6210\uFF1B\u8D39\u7528\u89C1 validate_course \u7684 credits \u62A5\u4EF7`);
@@ -17925,7 +17966,73 @@ var PREFIX = "units[0].lectures[0].sessions[0].lesson";
 function sourceUrl(boardId) {
   return `https://telleru.cn/conversation/${boardId}`;
 }
-function compileSection(board, index, lesson, opts) {
+function normalizeLesson(lesson) {
+  const fixes = [];
+  if (!lesson || typeof lesson !== "object") return { lesson, fixes };
+  const L2 = structuredClone(lesson);
+  const kinds = /* @__PURE__ */ new Set();
+  const isQuiz = (o) => typeof o.prompt === "string" && Array.isArray(o.options);
+  const isCheck = (o) => typeof o.prompt === "string" && typeof o.expected === "string";
+  const fixArr = (arr) => {
+    if (!Array.isArray(arr)) return arr;
+    const out = [];
+    for (const raw of arr) {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+        out.push(raw);
+        continue;
+      }
+      let s = { ...raw };
+      for (const k of ["quiz", "check"]) {
+        const inner2 = s[k];
+        if (inner2 && typeof inner2 === "object" && !Array.isArray(inner2) && (s.type === k || s.type === void 0) && !("text" in s) && !("say" in s)) {
+          s = { ...inner2, ...Object.fromEntries(Object.entries(s).filter(([x]) => x !== k)), type: k };
+          kinds.add(`${k} \u7684\u5B57\u6BB5\u76F4\u63A5\u5199\u5728\u8FD9\u4E00\u6B65\u4E0A\uFF0C\u4E0D\u8981\u518D\u5305\u4E00\u5C42 "${k}"`);
+        }
+      }
+      if (s.type === void 0 || s.type === "say") {
+        for (const alt of ["say", "content", "speech"]) {
+          if (s.text === void 0 && typeof s[alt] === "string") {
+            s.text = s[alt];
+            delete s[alt];
+            kinds.add(`\u53E3\u64AD\u6B63\u6587\u7684\u5B57\u6BB5\u540D\u662F text\uFF08\u4E0D\u662F ${alt}\uFF09`);
+          }
+        }
+      }
+      if (s.type === void 0) {
+        if (typeof s.text === "string") {
+          s.type = "say";
+          kinds.add('\u53E3\u64AD\u8981\u5199 "type":"say"');
+        } else if (isQuiz(s)) {
+          s.type = "quiz";
+          kinds.add('\u5FEB\u6D4B\u8981\u5199 "type":"quiz"');
+        } else if (isCheck(s)) {
+          s.type = "check";
+          kinds.add('\u68C0\u67E5\u9898\u8981\u5199 "type":"check"');
+        }
+      }
+      const tail = [];
+      if (s.type === "say") {
+        for (const k of ["quiz", "check"]) {
+          const inner2 = s[k];
+          if (inner2 && typeof inner2 === "object" && !Array.isArray(inner2)) {
+            tail.push({ ...inner2, type: k });
+            delete s[k];
+            kinds.add(`${k} \u8981\u5355\u72EC\u6210\u4E00\u6B65\uFF08\u548C\u53E3\u64AD\u5E76\u5217\uFF09\uFF0C\u4E0D\u80FD\u5199\u5728\u53E3\u64AD\u91CC`);
+          }
+        }
+      }
+      out.push(s, ...tail);
+    }
+    return out;
+  };
+  L2.opening = fixArr(L2.opening);
+  if (Array.isArray(L2.points)) L2.points = L2.points.map((pt) => pt && typeof pt === "object" ? { ...pt, steps: fixArr(pt.steps) } : pt);
+  if (L2.closing && typeof L2.closing === "object") L2.closing = { ...L2.closing, steps: fixArr(L2.closing.steps) };
+  const notes = [...kinds];
+  return { lesson: L2, fixes: notes.length ? [{ path: "lesson", message: `\u5DF2\u81EA\u52A8\u4FEE\u6B63\u6B65\u9AA4\u683C\u5F0F\uFF1A${notes.join("\uFF1B")}\u3002\u4E0B\u4E00\u8282\u8BF7\u76F4\u63A5\u6309\u8FD9\u4E2A\u683C\u5F0F\u5199` }] : [] };
+}
+function compileSection(board, index, rawLesson, opts) {
+  const { lesson, fixes } = normalizeLesson(rawLesson);
   const sec = board.sections[index];
   const pkg = {
     kind: PACKAGE_KIND,
@@ -17960,7 +18067,7 @@ function compileSection(board, index, lesson, opts) {
       c.site = "\u5BF9\u8BDD";
     }
   }
-  return { ok: result.ok && !!out, errors: result.ok ? [] : errors.length ? errors : result.errors.map(mapIssue), warnings, lesson: out };
+  return { ok: result.ok && !!out, errors: result.ok ? [] : errors.length ? errors : result.errors.map(mapIssue), warnings: [...fixes, ...warnings], lesson: out };
 }
 function pluginWording(m) {
   return m.replace("\u751F\u56FE\u677F\u4E66\u53EA\u7ED9\u4F1A\u5458\u751F\u6210\uFF08R49\uFF09\uFF0C\u5DF2\u53BB\u6389\uFF08\u4FDD\u7559\u53E3\u64AD\uFF09", '\u63D2\u4EF6\u4E0D\u652F\u6301\u751F\u56FE\uFF0C\u8FD9\u5F20\u6F2B\u753B\u5DF2\u53BB\u6389\uFF08\u4FDD\u7559\u53E3\u64AD\uFF09\uFF1B\u4EE5\u540E\u4E0D\u8981\u5199 {"kind":"image"} \u677F\u4E66').replace(/fetch_sources|read_source/g, "whiteboard_start \u7684 source_text").replace(/导入/g, "\u6536\u4E0B");
@@ -18012,15 +18119,22 @@ function lessonGuide(lang) {
 ${lang === "en" ? "\n**\u672C\u6B21\u8BB2\u89E3\u8BED\u8A00\u662F\u82F1\u6587**\uFF1A\u5B66\u4E60\u8005\u770B\u5230\u3001\u542C\u5230\u7684\u5185\u5BB9\u5168\u90E8\u5199\u82F1\u6587\uFF08JSON \u952E\u540D\u548C\u679A\u4E3E\u503C\u4E0D\u7FFB\u8BD1\uFF1B\u5F15\u7528 quote \u4ECD\u6309\u539F\u6587\u8BED\u8A00\u9010\u5B57\u6458\uFF09\u3002\u4E0B\u9762\u7684\u300C\u2264 N \u5B57\u300D\u6309\u5B57\u5BBD\u7B97\uFF1A2 \u4E2A\u82F1\u6587\u5B57\u7B26 \u2248 1 \u5B57\u3002\n" : ""}
 ## \u4E00\u8282\u8BFE\u7684\u7ED3\u6784
 - \`openingQuestions\`\uFF1A3 \u4E2A\u95EE\u9898\uFF0C\u4E0E 3 \u4E2A\u77E5\u8BC6\u70B9\u4E00\u4E00\u5BF9\u5E94\uFF08\u8FD9\u8282\u8BFE\u7684\u9AA8\u67B6\uFF09\u3002
-- \`opening\`\uFF1A7\u20139 \u6BB5 say\uFF0C\u90FD\u6807 \`"filler": true\`\u3002\u8981\u50CF\u8001\u5E08\u4E0A\u8BFE\u524D\u7684\u5F00\u573A\u767D\uFF0C\u4E0D\u8981\u7B2C\u4E00\u53E5\u5C31\u8FDB\u6B63\u9898\uFF082026-11-10 \u7528\u6237\u8981\u6C42\uFF09\uFF1A
-  1. \u7B2C 1 \u6BB5\uFF1A\u6253\u62DB\u547C\u5E76\u70B9\u51FA\u4ECA\u5929\u7684\u4E3B\u9898\uFF0C\u7528\u300C\u540C\u5B66\u4F60\u597D\uFF0C\u6211\u4EEC\u4ECA\u5929\u8981\u8BB2\u7684\u662F\u2026\u2026\u300D\u8FD9\u6837\u7684\u53E5\u5F0F\uFF08\u82F1\u6587\u8BFE\u7528 "Hi, today we're going to talk about \u2026"\uFF09\uFF1B\u4E0D\u8981\u7528\u300C\u597D\uFF0C\u6211\u4EEC\u5F00\u59CB\u300D\u8FD9\u7C7B\u5E72\u5DF4\u5DF4\u7684\u5F00\u5934\u3002
-  2. \u7B2C 2\u20133 \u6BB5\uFF1A\u4E3A\u4EC0\u4E48\u503C\u5F97\u5B66\u2014\u2014\u7ED3\u5408\u5B66\u4E60\u8005\u7684\u76EE\u6807\u548C\u4E00\u4E2A\u751F\u6D3B\u6216\u5DE5\u4F5C\u91CC\u7684\u5177\u4F53\u573A\u666F\uFF0C\u5F15\u8D77\u5174\u8DA3\u3002
-  3. \u7B2C 4 \u6BB5\uFF1A\u56DE\u5E94\u6478\u5E95\u7ED3\u8BBA\uFF0C\u4F8B\u5982\u300C\u4F60\u5DF2\u7ECF\u77E5\u9053\u2026\u2026\uFF0C\u4ECA\u5929\u91CD\u70B9\u8BB2\u2026\u2026\u300D\u3002
-  4. \u63A5\u7740\u7528\u4E00\u5F20 list \u9010\u6761\u5199\u51FA\u4E09\u4E2A\u95EE\u9898\uFF08\u6BCF\u4E2A\u95EE\u9898\u4E00\u6BB5 say\uFF0C\u5F80\u540C\u4E00\u4E2A list \u8FFD\u52A0\uFF09\u3002
-  5. \u6700\u540E\u4E00\u6BB5\uFF1A\u300C\u5B66\u5B8C\u8FD9\u8282\uFF0C\u4F60\u5C06\u80FD\u2026\u2026\u300D\uFF0C\u5E76\u8FC7\u6E21\u5230\u7B2C\u4E00\u4E2A\u77E5\u8BC6\u70B9\u3002
+- \`opening\`\uFF1A**3\u20135 \u6BB5 say**\uFF0C\u90FD\u6807 \`"filler": true\`\uFF0C**\u6BCF\u6BB5\u90FD\u8981\u8BA9\u767D\u677F\u52A8**\uFF082026-11-11 \u7528\u6237\u53CD\u9988\uFF1A\u5F00\u573A\u592A\u5570\u55E6\uFF0C\u76EF\u7740\u767D\u677F\u534A\u5929\u6CA1\u5185\u5BB9\uFF09\uFF1A
+  1. \u7B2C 1 \u6BB5\uFF1A\u4E00\u53E5\u8BDD\u6253\u62DB\u547C\u5E76\u70B9\u9898\uFF0C\u7528\u300C\u540C\u5B66\u4F60\u597D\uFF0C\u4ECA\u5929\u6211\u4EEC\u8BB2\u2026\u2026\u300D\uFF08\u82F1\u6587\u8BFE "Hi, today we're going to talk about \u2026"\uFF09\uFF0C**\u540C\u65F6\u5199\u6807\u9898\u677F\u4E66** \`{"kind":"title","text":"\u672C\u8282\u4E3B\u9898"}\`\u3002
+  2. \u7B2C 2 \u6BB5\uFF1A\u4E00\u53E5\u8BDD\u8BF4\u4E3A\u4EC0\u4E48\u503C\u5F97\u5B66\uFF0C\u628A\u5B66\u4E60\u8005\u7684\u76EE\u6807\u548C\u6478\u5E95\u7ED3\u8BBA\u63C9\u8FDB\u53BB\uFF08\u4F8B\u5982\u300C\u4F60\u60F3\u641E\u6E05\u5B83\u7684\u80FD\u529B\u8FB9\u754C\uFF0C\u53C8\u662F\u96F6\u57FA\u7840\uFF0C\u6211\u4EEC\u4E0D\u63A8\u516C\u5F0F\uFF0C\u53EA\u8BB2\u6BCF\u4E00\u6B65\u5728\u505A\u4EC0\u4E48\u300D\uFF09\uFF0C\u914D\u4E00\u6761 note \u677F\u4E66\u5199\u4E0B\u8FD9\u8282\u7684\u5B66\u4E60\u76EE\u6807\u3002\u4E0D\u8981\u5355\u72EC\u94FA\u9648\u573A\u666F\u3001\u4E0D\u8981\u590D\u8FF0\u7528\u6237\u8BF4\u8FC7\u7684\u8BDD\u3002
+  3. \u63A5\u7740\u7528\u4E00\u5F20 list\uFF08figId "q"\uFF09\u9010\u6761\u5199\u51FA\u4E09\u4E2A\u95EE\u9898\uFF1A\u6BCF\u4E2A\u95EE\u9898\u4E00\u6BB5 say\uFF0C\u5F80\u540C\u4E00\u4E2A list \u8FFD\u52A0\uFF1B\u6700\u540E\u4E00\u4E2A\u95EE\u9898\u90A3\u6BB5\u987A\u5E26\u8FC7\u6E21\u5230\u7B2C\u4E00\u4E2A\u77E5\u8BC6\u70B9\u3002
+  4. \u6574\u4E2A\u5F00\u573A\u63A7\u5236\u5728 20 \u79D2\u5185\u8BFB\u5B8C\uFF08\u7EA6 150 \u5B57\uFF09\u3002\u4E0D\u8981\u5355\u72EC\u5199\u300C\u8FD9\u4E00\u8282\u6211\u4EEC\u8981\u56DE\u7B54\u4E09\u4E2A\u95EE\u9898\u300D\u8FD9\u79CD\u6CA1\u6709\u65B0\u4FE1\u606F\u7684\u53E5\u5B50\u3002
+- **\u6B65\u9AA4\u7684\u5199\u6CD5**\uFF08\u6BCF\u4E00\u6B65\u90FD\u662F steps \u6570\u7EC4\u91CC\u7684\u4E00\u4E2A\u5BF9\u8C61\uFF0C\`type\` \u4E0D\u80FD\u7701\uFF1Bquiz / check \u5355\u72EC\u6210\u4E00\u6B65\uFF0C\u4E0D\u80FD\u5199\u8FDB say \u91CC\uFF0C\u4E5F\u4E0D\u8981\u518D\u5305\u4E00\u5C42\uFF09\uFF1A
+  \`\`\`json
+  {"type":"say","text":"\u53E3\u64AD\u6B63\u6587\uFF08\u5B57\u6BB5\u540D\u662F text\uFF09","board":{"kind":"title","text":"\u2026"},"id":"b1"}
+  {"type":"say","text":"\u5708\u51FA\u521A\u624D\u5199\u7684\u5173\u952E\u8BCD","mark":{"ref":"b1","style":"circle","text":"\u5173\u952E\u8BCD"}}
+  {"type":"quiz","prompt":"\u2026","options":["\u2026","\u2026"],"answer":0,"explain":"\u2026"}
+  {"type":"check","variant":"apply","prompt":"\u2026","expected":"\u53C2\u8003\u7B54\u6848","commonError":"\u5E38\u89C1\u9519\u8BEF"}
+  \`\`\`
+  \u5E38\u89C1\u9519\u8BEF\uFF1A\u516C\u5F0F\u677F\u4E66\u662F \`{"kind":"math","tex":"LaTeX"}\`\uFF08\u5B57\u6BB5\u662F tex\uFF0C\u4E0D\u662F text\uFF09\uFF1B\u6848\u4F8B\u5361 case \u6700\u591A 6 \u683C\u3002
 - \`points\`\uFF1A**\u6070\u597D 3 \u4E2A\u77E5\u8BC6\u70B9**\u3002\u6BCF\u4E2A\uFF1Atitle\uFF08\u767D\u677F\u5206\u5C4F\u6807\u9898\uFF09\u3001objective\uFF08\u8BFE\u5802\u8981\u70B9\u300C\u80FD\u2026\u300D\uFF09\u3001steps\u3001reward\uFF08{concept \u2264 12 \u5B57, desc\u300C\u4F60\u5DF2\u7ECF\u638C\u63E1\u4E86\uFF1A\u2026\u300D}\uFF09\u3002
   - \u6BCF\u4E2A\u77E5\u8BC6\u70B9 10\u201314 \u6BB5 say\uFF08\u81F3\u5C11 4 \u6BB5\u5B9E\u8D28\u53E3\u64AD\uFF09\uFF0C\u6BCF\u6BB5 25\u201360 \u5B57\uFF08\u786C\u4E0A\u9650 ${SAY_MAX_CHARS} \u5B57\uFF0C\u8D85\u51FA\u81EA\u52A8\u5207\u53E5\uFF09\uFF0C\u77ED\u53E5\u3001\u53E3\u8BED\u3001\u4E0D\u590D\u8FF0\u3002
-  - 1\u20132 \u9053 quiz\uFF1A\`{"type":"quiz","prompt":"\u2026","options":["\u2026","\u2026"],"answer":\u4E0B\u6807,"explain":"\u2026"}\`\u3002\u6B63\u786E\u9009\u9879\u7684\u5173\u952E\u8BCD\u5FC5\u987B\u51FA\u73B0\u5728 quiz \u524D\u7D27\u6328\u7740\u7684 1\u20133 \u6BB5\u53E3\u64AD\u6216\u677F\u4E66\u91CC\uFF08\u5426\u5219\u8FD9\u9053\u5FEB\u6D4B\u4F1A\u88AB\u53BB\u6389\uFF09\u3002quiz \u540E\u4E0D\u8981\u518D\u53E3\u64AD\u63ED\u6653\u7B54\u6848\u3002
+  - 1\u20132 \u9053 quiz\uFF1A\`{"type":"quiz","prompt":"\u2026","options":["\u2026","\u2026"],"answer":\u4E0B\u6807,"explain":"\u2026"}\`\u3002\u6B63\u786E\u9009\u9879\u7684\u5173\u952E\u8BCD\u5FC5\u987B\u51FA\u73B0\u5728 quiz \u524D\u7D27\u6328\u7740\u7684 1\u20133 \u6BB5\u53E3\u64AD\u6216\u677F\u4E66\u91CC\uFF08\u5426\u5219\u6536\u7A3F\u65F6\u4F1A\u628A\u5B83\u8FDE\u540C\u8FC7\u6E21\u53E5\u524D\u79FB\u5230\u8BB2\u51FA\u7B54\u6848\u7684\u53E3\u64AD\u4E4B\u540E\uFF1B\u6574\u6BB5\u90FD\u627E\u4E0D\u5230\u4F9D\u636E\u624D\u53BB\u6389\uFF09\u3002quiz \u540E\u4E0D\u8981\u518D\u53E3\u64AD\u63ED\u6653\u7B54\u6848\u3002
   - \u7B2C 2 \u6216\u7B2C 3 \u4E2A\u77E5\u8BC6\u70B9\u653E 1 \u9053 check\uFF08\`"variant":"apply"\`\uFF09\uFF1A\`{"type":"check","variant":"apply","prompt":"\u2026","expected":"\u53C2\u8003\u7B54\u6848","commonError":"\u5E38\u89C1\u9519\u8BEF"}\`\uFF0C\u8BA9\u5B66\u751F\u8BF4\u51FA\u5224\u65AD\u548C\u7406\u7531\u3002\u6BCF\u4E2A\u77E5\u8BC6\u70B9\u81F3\u5C11 1 \u9053 quiz \u6216 check\u3002
   - \u81F3\u5C11\u4E00\u5904\u300C\u5F88\u591A\u4EBA\u4F1A\u89C9\u5F97\u2026\u2026\u4F46\u771F\u76F8\u662F\u2026\u2026\u300D\u3002\u5168\u8282\u4E00\u4E2A\u8D2F\u7A7F\u6848\u4F8B\uFF0C\u7528 case \u5361\uFF08figId "case"\uFF09\u9010\u683C\u753B\u51FA\u6765\u3002
 - \`closing\`\uFF1Atitle\u3001steps\uFF08\u9010\u4E2A\u56DE\u6536\u4E09\u4E2A\u95EE\u9898\uFF0C\u5F80\u4E00\u5F20\u5F52\u7EB3\u8868 table figId "sum" \u91CC\u9010\u884C\u8FFD\u52A0\uFF1B1 \u9053 check variant "recap"\uFF09\u3001summary\uFF081\u20135 \u6761\uFF09\u3001next\uFF08\u4E0B\u4E00\u8282\u94A9\u5B50\uFF1B\u6700\u540E\u4E00\u8282\u5199\u300C\u56DE\u5230\u5BF9\u8BDD\uFF0C\u60F3\u7EE7\u7EED\u5B66\u4EC0\u4E48\u544A\u8BC9\u6211\u300D\u4E4B\u7C7B\uFF09\u3002

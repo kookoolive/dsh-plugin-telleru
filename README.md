@@ -22,12 +22,12 @@ dsh-plugin-telleru
 dsh plugin add dsh-plugin-telleru
 ```
 
-从 [npm](https://www.npmjs.com/package/dsh-plugin-telleru) 安装的是预构建包，不需要额外的构建授权，推荐用这种方式。想固定版本，写成 `dsh-plugin-telleru@1.3.2`。
+从 [npm](https://www.npmjs.com/package/dsh-plugin-telleru) 安装的是预构建包，不需要额外的构建授权，推荐用这种方式。想固定版本，写成 `dsh-plugin-telleru@1.3.3`。
 
 **其他安装方式**
 
-- 从 GitHub 安装：`dsh plugin add github:kookoolive/dsh-plugin-telleru`（固定版本加标签，例如 `#v1.3.2`）
-- 离线安装：从 [Releases](https://github.com/kookoolive/dsh-plugin-telleru/releases) 下载 `.tgz`，用 `dsh plugin add /绝对路径/dsh-plugin-telleru-1.3.2.tgz` 安装
+- 从 GitHub 安装：`dsh plugin add github:kookoolive/dsh-plugin-telleru`（固定版本加标签，例如 `#v1.3.3`）
+- 离线安装：从 [Releases](https://github.com/kookoolive/dsh-plugin-telleru/releases) 下载 `.tgz`，用 `dsh plugin add /绝对路径/dsh-plugin-telleru-1.3.3.tgz` 安装
 
 装好后重启 DeepSeek Harness，打开插件开关。
 
