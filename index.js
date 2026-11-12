@@ -18077,6 +18077,23 @@ function makeTts(getCfg) {
     return null;
   };
 }
+var keyChecks = /* @__PURE__ */ new Map();
+async function checkSpeechKey(key, voice, fresh = false) {
+  const hit = keyChecks.get(key);
+  if (!fresh && hit && Date.now() - hit.at < 5 * 6e4) return hit;
+  let r;
+  try {
+    const buf = await synthOwn(key, voice, "\u4F60\u597D");
+    r = buf ? { ok: true, at: Date.now() } : { ok: false, error: "\u8C46\u5305\u8BED\u97F3\u6CA1\u6709\u8FD4\u56DE\u97F3\u9891\uFF0C\u7A0D\u540E\u518D\u8BD5", at: Date.now() };
+  } catch (e) {
+    const m = e.message ?? "";
+    const code = Number(/TTS (\d+)/.exec(m)?.[1] ?? 0);
+    const error = code === 401 || code === 403 ? "Key \u65E0\u6548\uFF0C\u6216\u8FD9\u4E2A Key \u6CA1\u6709\u5F00\u901A\u8C46\u5305\u8BED\u97F3\u5408\u6210" : code === 429 ? "\u8C03\u7528\u592A\u9891\u7E41\u6216\u989D\u5EA6\u7528\u5B8C\u4E86\uFF0C\u7A0D\u540E\u518D\u8BD5" : code ? `\u8C46\u5305\u8BED\u97F3\u8FD4\u56DE ${code}\uFF1A${m}` : /timeout|abort|fetch failed|ENOTFOUND|ECONN/i.test(m) ? "\u8FDE\u4E0D\u4E0A\u706B\u5C71\u5F15\u64CE\uFF0C\u68C0\u67E5\u7F51\u7EDC" : `\u68C0\u6D4B\u5931\u8D25\uFF1A${m}`;
+    r = { ok: false, error, at: Date.now() };
+  }
+  keyChecks.set(key, r);
+  return r;
+}
 async function synthOwn(key, voice, text2) {
   const res = await fetch(endpoint(), {
     method: "POST",
@@ -18513,8 +18530,13 @@ ${lessonGuide(board.lang)}` };
     }
     const values = {};
     for (const k of EDITABLE) values[k] = SECRET.includes(k) ? { set: !!c[k] } : c[k];
-    const account = c.telleruToken ? await accountInfo(c.telleruBaseUrl, c.telleruToken, new URL(req.url).searchParams.has("fresh")) : null;
-    return Response.json({ values, account, accountError: c.telleruToken && !account ? accountError(c.telleruBaseUrl, c.telleruToken) ?? "\u4EE4\u724C\u65E0\u6548\uFF0C\u6216\u8FDE\u4E0D\u4E0A TellerU" : null, voices: VOICES.filter((v) => voiceLang(v) === "zh").map((v) => ({ id: v.id, label: v.label, desc: v.desc })) });
+    const fresh = new URL(req.url).searchParams.get("fresh");
+    const [account, speech] = await Promise.all([
+      c.telleruToken ? accountInfo(c.telleruBaseUrl, c.telleruToken, fresh === "1" || fresh === "account") : null,
+      c.speechApiKey ? checkSpeechKey(c.speechApiKey, c.voice || DEFAULT_VOICE_ID, fresh === "1" || fresh === "speech") : null
+    ]);
+    const active = speech?.ok ? "own" : account ? "account" : c.speechApiKey ? "own" : null;
+    return Response.json({ values, account, speech, active, accountError: c.telleruToken && !account ? accountError(c.telleruBaseUrl, c.telleruToken) ?? "\u4EE4\u724C\u65E0\u6548\uFF0C\u6216\u8FDE\u4E0D\u4E0A TellerU" : null, voices: VOICES.filter((v) => voiceLang(v) === "zh").map((v) => ({ id: v.id, label: v.label, desc: v.desc })) });
   }
   ctx.effect?.(() => () => flushAll(), "telleru-whiteboard: flush");
 }

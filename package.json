@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-telleru",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "TellerU：在任何对话里输入 /telleru，AI 老师在右侧白板边写边讲。",
   "author": "TellerU (https://telleru.cn)",
   "homepage": "https://github.com/kookoolive/dsh-plugin-telleru#readme",

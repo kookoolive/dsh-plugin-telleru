@@ -26,6 +26,8 @@ window.__ModuleLoader__.load({
       board: v('state-business-primary', '#4176e6'), soft: v('state-business-tertiary', '#e4edfd'), amber: v('state-warn-label', '#dd8629'),
       amberSoft: 'color-mix(in srgb, ' + v('state-warn-primary', '#f59e0b') + ' 14%, transparent)',
       onBoard: v('label-primary-foreground', '#fff'), field: v('bg-layer-2', '#fff'), disabled: v('button-primary-dimmed', '#ebeef2'),
+      ok: v('state-success-primary', '#16a34a'), okSoft: 'color-mix(in srgb, ' + v('state-success-primary', '#22c55e') + ' 14%, transparent)',
+      danger: v('state-error-primary', '#ec1313'),
     }
 
     // ───── 右栏白板 ─────
@@ -167,62 +169,116 @@ window.__ModuleLoader__.load({
       }
     }
 
+    // ───── 语音 Key 卡片（2026-11-11 用户需求：检测校验、显示状态、可删除）─────
+    // 插件页设置和绑定弹窗共用；白板设置里的「模型配置」页签是同样的交互（网站代码 PluginKeys.tsx）
+    const KEY_DEFS = {
+      account: { field: 'telleruToken', title: 'TellerU 令牌', ph: 'tu_…', link: ['去 TellerU 生成', 'https://telleru.cn/settings'],
+        hint: '在 TellerU 网站「设置 → 连接 AI 助手」生成（tu_ 开头），用账号积分：每节 3 积分，同一节只收一次。' },
+      speech: { field: 'speechApiKey', title: '豆包语音 API Key', ph: '豆包语音 API Key', link: ['去火山引擎', 'https://console.volcengine.com/speech/app'],
+        hint: '在火山引擎控制台「豆包语音」里创建，费用由火山引擎直接结算。两样都填时优先用它。' },
+    }
+    function hhmm(t) { const d = new Date(t); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) }
+    /** 某个 Key 的状态：{ set, ok, text } */
+    function keyStatus(kind, d) {
+      const v = (d && d.values) || {}
+      const def = KEY_DEFS[kind]
+      if (!(v[def.field] && v[def.field].set)) return { set: false, ok: false, text: '未填写' }
+      if (kind === 'account') {
+        const a = d.account
+        if (a) return { set: true, ok: true, text: '可用 · ' + a.user.nickname + ' · ' + a.plan.name + ' · 可用积分 ' + (a.credits.unlimited ? '无限' : a.credits.available) }
+        return { set: true, ok: false, text: d.accountError || '令牌无效，或连不上 TellerU' }
+      }
+      const sp = d.speech
+      if (sp && sp.ok) return { set: true, ok: true, text: '可用 · 试合成成功（' + hhmm(sp.at) + ' 检测）' }
+      return { set: true, ok: false, text: (sp && sp.error) || '还没检测' }
+    }
+    function anyKeyOk(d) { return keyStatus('account', d).ok || keyStatus('speech', d).ok }
+    function smallBtn(label, onClick, opts) {
+      opts = opts || {}
+      return h('button', { type: 'button', onClick: onClick, disabled: !!opts.disabled, style: { border: opts.primary ? 0 : '1px solid ' + (opts.danger ? C.danger : C.line), borderRadius: 8, background: opts.primary ? C.board : C.card, color: opts.primary ? C.onBoard : opts.danger ? C.danger : C.ink, padding: '4px 11px', fontSize: 12.5, fontWeight: 500, cursor: opts.disabled ? 'default' : 'pointer', opacity: opts.disabled ? 0.5 : 1, whiteSpace: 'nowrap' } }, label)
+    }
+    /**
+     * 一个 Key：已填写 → 状态 + 检测 / 更换 / 删除（删除要再点一次确认）；未填写 → 输入框 + 保存并检测
+     * props: kind, data（GET settings 的结果）, reload(fresh) → Promise<data>
+     */
+    function KeyCard(props) {
+      const def = KEY_DEFS[props.kind]
+      const d = props.data
+      const st = keyStatus(props.kind, d)
+      const active = d && d.active === (props.kind === 'speech' ? 'own' : 'account') && st.ok
+      const [edit, setEdit] = React.useState(false)
+      const [val, setVal] = React.useState('')
+      const [busy, setBusy] = React.useState('')
+      const [confirmDel, setConfirmDel] = React.useState(false)
+      const [msg, setMsg] = React.useState('')
+      const fresh = props.kind
+      const post = function (value, label) {
+        const patch = {}; patch[def.field] = value
+        setBusy(label); setMsg('')
+        return fetch(SET_ROUTE, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(patch) })
+          .then(function (r) { return r.json() })
+          .then(function (res) { if (!res || !res.ok) throw new Error((res && res.error && res.error.message) || '保存失败'); return props.reload(fresh) })
+          .then(function () { setBusy(''); setEdit(false); setVal(''); setConfirmDel(false) })
+          .catch(function (e) { setBusy(''); setMsg(e.message || '保存失败') })
+      }
+      const check = function () { setBusy('检测中…'); setMsg(''); props.reload(fresh).then(function () { setBusy('') }, function () { setBusy(''); setMsg('检测失败') }) }
+      const input = function () {
+        const ip = { type: 'password', autoComplete: 'off', value: val, placeholder: def.ph, 'aria-label': def.title, onChange: function (e) { setVal(e.target.value) },
+          onKeyDown: function (e) { if (e.key === 'Enter' && val.trim()) post(val.trim(), '保存中…') }, style: Object.assign({}, inputStyle) }
+        return h('div', { style: { display: 'flex', gap: 8, alignItems: 'center' } },
+          h('input', ip),
+          smallBtn(busy || '保存并检测', function () { post(val.trim(), '保存中…') }, { primary: true, disabled: !val.trim() || !!busy }),
+          st.set ? smallBtn('取消', function () { setEdit(false); setVal('') }) : null)
+      }
+      const pill = h('span', { style: { fontSize: 11.5, fontWeight: 500, borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap',
+        background: !st.set ? C.soft : st.ok ? C.okSoft : C.amberSoft, color: !st.set ? C.muted : st.ok ? C.ok : C.amber } },
+        busy === '检测中…' ? '检测中…' : !st.set ? '未填写' : st.ok ? (active ? '可用 · 正在使用' : '可用') : '不可用')
+      return h('div', { style: { border: '1px solid ' + C.line, borderRadius: 12, padding: '12px 14px', marginBottom: 12, background: C.card } },
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 } },
+          h('span', { style: { fontSize: 13.5, fontWeight: 600, color: C.ink } }, def.title), pill,
+          h('a', { href: def.link[1], target: '_blank', rel: 'noopener noreferrer', style: { marginLeft: 'auto', color: C.board, textDecoration: 'none', fontSize: 12.5, whiteSpace: 'nowrap' } }, def.link[0] + ' ↗')),
+        st.set && !edit
+          ? h('div', null,
+              h('div', { style: { fontSize: 12.5, lineHeight: 1.6, color: st.ok ? C.ink : C.amber, marginBottom: 8 } }, (st.ok ? '✓ ' : '✗ ') + st.text),
+              h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
+                smallBtn(busy === '检测中…' ? '检测中…' : '检测', check, { disabled: !!busy }),
+                smallBtn('更换', function () { setEdit(true); setConfirmDel(false) }, { disabled: !!busy }),
+                confirmDel
+                  ? h(React.Fragment, null, smallBtn(busy === '删除中…' ? '删除中…' : '确认删除', function () { post('', '删除中…') }, { danger: true, disabled: !!busy }), smallBtn('取消', function () { setConfirmDel(false) }))
+                  : smallBtn('删除', function () { setConfirmDel(true) }, { danger: true, disabled: !!busy })))
+          : input(),
+        h('div', { style: { fontSize: 12, color: C.muted, marginTop: 6, lineHeight: 1.6 } }, def.hint),
+        msg ? h('div', { style: { fontSize: 12.5, color: C.amber, marginTop: 4 } }, msg) : null)
+    }
+
     function BindOverlay() {
       const [, force] = React.useReducer(function (x) { return x + 1 }, 0)
       React.useEffect(function () { bindStore.subs.add(force); return function () { bindStore.subs.delete(force) } }, [])
       const reason = bindStore.open
-      const [token, setToken] = React.useState('')
-      const [key, setKey] = React.useState('')
-      const [state, setState] = React.useState({ busy: false, msg: '', bad: false })
-      React.useEffect(function () { if (reason) { setToken(''); setKey(''); setState({ busy: false, msg: '', bad: false }) } }, [reason])
+      const [data, setData] = React.useState(null)
+      const reload = React.useCallback(function (fresh) {
+        return fetch(SET_ROUTE + (fresh ? '&fresh=' + fresh : '')).then(function (r) { return r.json() }).then(function (d) { setData(d); return d })
+      }, [])
+      React.useEffect(function () { if (reason) { setData(null); reload('') } }, [reason])
       if (!reason) return null
       const run = reason !== 'install'
-      const canSave = !!(token.trim() || key.trim()) && !state.busy
-      const save = function () {
-        const patch = {}
-        if (token.trim()) patch.telleruToken = token.trim()
-        if (key.trim()) patch.speechApiKey = key.trim()
-        setState({ busy: true, msg: '保存中…', bad: false })
-        fetch(SET_ROUTE, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(patch) })
-          .then(function (r) { return r.json() })
-          .then(function (d) {
-            if (!d || !d.ok) throw new Error((d && d.error && d.error.message) || '保存失败')
-            return fetch(SET_ROUTE + '&fresh=1').then(function (r) { return r.json() })
-          })
-          .then(function (d) {
-            if (patch.telleruToken && !patch.speechApiKey && d && d.accountError) { setState({ busy: false, msg: '令牌已保存，但检测没通过：' + d.accountError, bad: true }); return }
-            setState({ busy: false, msg: '', bad: false }); closeBind(true)
-          })
-          .catch(function (e) { setState({ busy: false, msg: e.message || '保存失败', bad: true }) })
-      }
-      const link = function (label, url) {
-        return h('a', { href: url, target: '_blank', rel: 'noopener noreferrer', style: { color: C.board, textDecoration: 'none', whiteSpace: 'nowrap', fontWeight: 400, fontSize: 12.5 } }, label + ' ↗')
-      }
-      const field = function (label, hint, value, onChange, ph, extra) {
-        const props = { type: 'password', autoComplete: 'off', value: value, placeholder: ph, 'aria-label': label, style: { width: '100%', boxSizing: 'border-box' }, onChange: function (e) { onChange(e.target.value) } }
-        const input = P && P.Input ? h(P.Input, props) : h('input', Object.assign({}, props, { style: Object.assign({}, inputStyle) }))
-        return h('div', { style: { marginBottom: 14 } },
-          h('div', { style: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, fontSize: 13, fontWeight: 500, color: C.ink, marginBottom: 6 } }, label, extra || null),
-          h('div', { className: 'tu-bind-input' }, input),
-          h('div', { style: { fontSize: 12, color: C.muted, marginTop: 5, lineHeight: 1.6 } }, hint))
-      }
-      const body = h('div', { style: { fontSize: 13, color: C.ink } },
-        h('style', null, '.tu-bind-input > *{width:100%;box-sizing:border-box}'),
-        run ? h('div', { style: { background: C.amberSoft, color: C.amber, borderRadius: 10, padding: '8px 12px', fontSize: 13, fontWeight: 500, marginBottom: 14 } }, '还没有绑定：这次讲解只有板书和字幕，没有语音') : null,
-        field('TellerU 令牌', '在 TellerU 网站「设置 → 连接 AI 助手」生成（tu_ 开头），用账号积分：每节 3 积分。', token, setToken, 'tu_…', link('去 TellerU 生成', 'https://telleru.cn/settings')),
-        field('豆包语音 API Key', '在火山引擎控制台「豆包语音」里创建，费用由火山引擎直接结算。两样都填时优先用它。', key, setKey, '豆包语音 API Key', link('去火山引擎', 'https://console.volcengine.com/speech/app')),
-        state.msg ? h('div', { style: { fontSize: 12.5, color: state.bad ? C.amber : C.muted } }, state.msg) : null)
+      const ok = anyKeyOk(data)
+      const body = h('div', { style: { fontSize: 13, color: C.ink, minWidth: 0 } },
+        run && !ok ? h('div', { style: { background: C.amberSoft, color: C.amber, borderRadius: 10, padding: '8px 12px', fontSize: 13, fontWeight: 500, marginBottom: 12 } }, '还没有可用的语音：这次讲解只有板书和字幕') : null,
+        ok ? h('div', { style: { background: C.okSoft, color: C.ok, borderRadius: 10, padding: '8px 12px', fontSize: 13, fontWeight: 500, marginBottom: 12 } }, '✓ 语音讲解已可用，点「完成」开讲') : null,
+        data ? h(React.Fragment, null, h(KeyCard, { kind: 'account', data: data, reload: reload }), h(KeyCard, { kind: 'speech', data: data, reload: reload }))
+          : h('div', { style: { color: C.muted, fontSize: 13, padding: '8px 0' } }, '正在读取…'))
       const btn = function (variant, label, onClick, disabled) {
         return P && P.Button
           ? h(P.Button, { variant: variant, onClick: onClick, disabled: !!disabled }, label)
           : h('button', { type: 'button', onClick: onClick, disabled: !!disabled, style: { border: variant === 'primary' ? 0 : '1px solid ' + C.line, borderRadius: 10, background: variant === 'primary' ? C.board : C.card, color: variant === 'primary' ? C.onBoard : C.ink, padding: '8px 16px', fontSize: 13.5, cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.5 : 1 } }, label)
       }
       const footer = h(React.Fragment, null,
-        btn('outline', run ? '先不绑定，只看字幕' : '稍后再说', function () { closeBind(false) }),
-        btn('primary', state.busy ? '保存中…' : '保存', save, !canSave))
+        ok ? null : btn('outline', run ? '先不绑定，只看字幕' : '稍后再说', function () { closeBind(false) }),
+        btn('primary', '完成', function () { closeBind(ok) }, !ok))
       const title = run ? '绑定后才有语音讲解' : 'TellerU 白板已安装：绑定语音'
-      const desc = run ? '二选一填一个：TellerU 令牌，或豆包语音 API Key。' : '二选一填一个，就有语音讲解。'
-      if (P && P.Modal) return h(P.Modal, { open: true, onClose: function () { closeBind(false) }, closeLabel: '关闭', title: title, description: desc, footer: footer }, body)
+      const desc = '二选一填一个：TellerU 令牌（账号积分），或豆包语音 API Key（两样都填时优先用它）。填好会自动检测。'
+      if (P && P.Modal) return h(P.Modal, { open: true, onClose: function () { closeBind(anyKeyOk(data)) }, closeLabel: '关闭', title: title, description: desc, footer: footer }, body)
       // 拿不到宿主组件时的简易弹窗
       return h('div', { role: 'dialog', 'aria-modal': true, style: { position: 'fixed', inset: 0, zIndex: 1000, display: 'grid', placeItems: 'center', background: 'rgba(0,0,0,.35)', pointerEvents: 'auto' } },
         h('div', { style: { width: 'min(480px, calc(100vw - 32px))', background: C.card, borderRadius: 16, padding: 20, boxShadow: '0 20px 60px rgba(0,0,0,.25)' } },
@@ -239,40 +295,28 @@ window.__ModuleLoader__.load({
       const [draft, setDraft] = React.useState({})
       const [state, setState] = React.useState('')
       const [adv, setAdv] = React.useState(false)
-      const load = React.useCallback(function (fresh) {
-        return fetch(SET_ROUTE + (fresh ? '&fresh=1' : '')).then(function (r) { return r.json() }).then(function (d) { setData(d) }).catch(function () { setState('读取设置失败') })
+      const reload = React.useCallback(function (fresh) {
+        return fetch(SET_ROUTE + (fresh ? '&fresh=' + fresh : '')).then(function (r) { return r.json() }).then(function (d) { setData(d); return d })
       }, [])
-      React.useEffect(function () { load(false) }, [load])
+      React.useEffect(function () { reload('').catch(function () { setState('读取设置失败') }) }, [reload])
       if (!data) return h('div', { style: { color: C.muted, fontSize: 13 } }, state || '正在读取设置…')
       const v = data.values || {}
       const val = function (k) { return draft[k] !== undefined ? draft[k] : (typeof v[k] === 'string' ? v[k] : '') }
       const set = function (k) { return function (e) { const n = Object.assign({}, draft); n[k] = e.target.value; setDraft(n) } }
-      const secret = function (k, ph) {
-        return h('input', { type: 'password', autoComplete: 'off', value: draft[k] || '', onChange: set(k), placeholder: v[k] && v[k].set ? '已填写（留空保持不变；填一个空格清除）' : ph, style: inputStyle })
-      }
       const save = function () {
-        const patch = {}
-        Object.keys(draft).forEach(function (k) { const x = draft[k]; if (x === '' && v[k] && typeof v[k] === 'object') return; patch[k] = x })
         setState('保存中…')
-        fetch(SET_ROUTE, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(patch) }).then(function (r) { return r.json() }).then(function (d) {
-          if (d && d.ok) { setDraft({}); setState('已保存'); setTimeout(function () { load(true) }, 400) } else setState('保存失败：' + ((d && d.error && d.error.message) || '未知错误'))
+        fetch(SET_ROUTE, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(draft) }).then(function (r) { return r.json() }).then(function (d) {
+          if (d && d.ok) { setDraft({}); setState('已保存'); reload('') } else setState('保存失败：' + ((d && d.error && d.error.message) || '未知错误'))
         }).catch(function () { setState('保存失败') })
       }
-      const acct = data.account
       const section = function (title, children) { return h('div', { style: { border: '1px solid ' + C.line, borderRadius: 12, padding: '14px 16px', margin: '0 0 14px', background: C.card } }, h('div', { style: { fontWeight: 600, fontSize: 14, marginBottom: 10, color: C.ink } }, title), children) }
+      const dirty = Object.keys(draft).length > 0
       return h('div', { style: { maxWidth: 640 } },
-        h('p', { style: { fontSize: 13, color: C.muted, lineHeight: 1.7, margin: '0 0 14px' } }, '语音讲解二选一开通：TellerU 令牌（账号积分），或你自己的豆包语音 API Key（两样都填时优先用它）。都不填也能用，只是没有声音。'),
-        section('TellerU 账号', [
-          Field('TellerU 令牌', '在 TellerU 网站「设置 → 连接 AI 助手」生成（tu_ 开头）。豆包语音每节 ' + (acct ? acct.pricing.voiceSection : 3) + ' 积分，同一节只收一次。', secret('telleruToken', 'tu_…')),
-          acct ? h('div', { key: 'acct', style: { fontSize: 13, color: C.board, background: C.soft, borderRadius: 8, padding: '8px 10px' } },
-            '已绑定：' + acct.user.nickname + ' · ' + acct.plan.name + ' · 可用积分 ' + (acct.credits.unlimited ? '无限' : acct.credits.available))
-            : data.accountError ? h('div', { key: 'err', style: { fontSize: 13, color: C.amber, background: C.amberSoft, borderRadius: 8, padding: '8px 10px' } }, data.accountError) : null,
-        ]),
-        section('自己的豆包语音 Key', [
-          Field('豆包语音 API Key', '在豆包语音控制台创建。填了就优先用它，不扣 TellerU 积分。', secret('speechApiKey', '豆包语音控制台 → API Key')),
-        ]),
+        h('p', { style: { fontSize: 13, color: C.muted, lineHeight: 1.7, margin: '0 0 14px' } }, '语音讲解二选一开通：TellerU 令牌（账号积分），或你自己的豆包语音 API Key（两样都填时优先用它）。填好会自动检测；都不填也能用，只是没有声音。'),
+        h(KeyCard, { kind: 'account', data: data, reload: reload }),
+        h(KeyCard, { kind: 'speech', data: data, reload: reload }),
         section('讲解', [
-          Field('讲解音色', '绑定 TellerU 账号或填了豆包语音 Key 后生效；白板设置里也能随时换。', h('select', { value: val('voice'), onChange: set('voice'), style: inputStyle }, (data.voices || []).map(function (x) { return h('option', { key: x.id, value: x.id }, x.label + ' · ' + x.desc) }))),
+          Field('讲解音色', '有可用的语音后生效；白板设置里也能随时换。', h('select', { value: val('voice'), onChange: set('voice'), style: inputStyle }, (data.voices || []).map(function (x) { return h('option', { key: x.id, value: x.id }, x.label + ' · ' + x.desc) }))),
           Field('讲解语言', null, h('select', { value: val('language') || 'auto', onChange: set('language'), style: inputStyle }, h('option', { value: 'auto' }, '按内容自动判断'), h('option', { value: 'zh' }, '中文'), h('option', { value: 'en' }, 'English'))),
         ]),
         h('button', { type: 'button', onClick: function () { setAdv(!adv) }, style: { border: 0, background: 'transparent', color: C.muted, fontSize: 12.5, cursor: 'pointer', padding: 0, margin: '0 0 10px' } }, adv ? '收起高级设置' : '高级设置'),
@@ -280,8 +324,7 @@ window.__ModuleLoader__.load({
           Field('TellerU 服务地址', null, h('input', { value: val('telleruBaseUrl'), onChange: set('telleruBaseUrl'), style: inputStyle })),
         ]) : null,
         h('div', { style: { display: 'flex', alignItems: 'center', gap: 12 } },
-          h('button', { type: 'button', onClick: save, disabled: !Object.keys(draft).length, style: { border: 0, borderRadius: 10, background: Object.keys(draft).length ? C.board : C.disabled, color: C.onBoard, padding: '8px 18px', fontSize: 13.5, fontWeight: 500, cursor: Object.keys(draft).length ? 'pointer' : 'default' } }, '保存'),
-          h('button', { type: 'button', onClick: function () { setState('检测中…'); load(true).then(function () { setState('') }) }, style: { border: '1px solid ' + C.line, borderRadius: 10, background: C.card, color: C.ink, padding: '7px 14px', fontSize: 13, cursor: 'pointer' } }, '检测账号'),
+          h('button', { type: 'button', onClick: save, disabled: !dirty, style: { border: 0, borderRadius: 10, background: dirty ? C.board : C.disabled, color: C.onBoard, padding: '8px 18px', fontSize: 13.5, fontWeight: 500, cursor: dirty ? 'pointer' : 'default' } }, '保存'),
           h('span', { style: { fontSize: 12.5, color: C.muted } }, state)))
     }
 
